@@ -1,6 +1,10 @@
 "use client";
 
 import Link from 'next/link'
+import {
+  SignUpButton,
+  SignInButton
+} from '@clerk/nextjs'
 
 export default function Home() {
   return (
@@ -23,23 +27,21 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/signup"
-              className="bg-[#bc7fff] hover:bg-[#bc7fff]/90 text-[#1e0539] font-semibold py-4 px-8 rounded-lg transition duration-200 shadow-lg hover:shadow-[#bc7fff]/25 hover:shadow-xl"
-            >
-              Start Protecting Your Services
-            </Link>
-            <Link
-              href="/how-it-works"
-              className="border border-[#bc7fff] hover:bg-[#bc7fff]/10 text-[#bc7fff] font-semibold py-4 px-8 rounded-lg transition duration-200"
-            >
-              Learn More
-            </Link>
+            <SignUpButton>
+              <button className="bg-[#bc7fff] hover:bg-[#bc7fff]/90 text-[#1e0539] font-semibold py-4 px-8 rounded-lg transition duration-200 shadow-lg hover:shadow-[#bc7fff]/25 hover:shadow-xl  cursor-pointer">
+                Start protecting your services
+              </button>
+            </SignUpButton>
+            <SignInButton>
+              <button
+                className="border border-[#bc7fff] hover:bg-[#bc7fff]/10 text-[#bc7fff] font-semibold py-4 px-8 rounded-lg transition duration-200"
+              >
+                I've already an account
+              </button>
+            </SignInButton>
+
           </div>
 
-          <p className="text-gray-400 mt-6 text-sm">
-            No credit card required • Set up in 2 minutes
-          </p>
         </div>
       </section>
 
@@ -48,7 +50,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
             Your Hard Work,{' '}
-            <span className="text-red-400">Gone to Sleep</span>
+            <span className="text-[#bc7fff]">Gone to Sleep</span>
           </h2>
 
           <div className="max-w-3xl mx-auto text-center">
@@ -57,7 +59,7 @@ export default function Home() {
             </p>
             <p className="text-lg text-gray-300">
               But these platforms have one rule:{' '}
-              <strong className="text-red-400">inactivity spins down your service.</strong>{' '}
+              <strong className="text-[#bc7fff]">inactivity spins down your service.</strong>{' '}
               A few days without visits and your app is offline.
             </p>
           </div>
@@ -177,12 +179,11 @@ export default function Home() {
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Your projects deserve to be always available. Let Keeper be the guardian that never sleeps.
           </p>
-          <Link
-            href="/signup"
-            className="inline-block bg-[#bc7fff] hover:bg-[#bc7fff]/90 text-[#1e0539] font-bold py-4 px-12 rounded-lg transition duration-200 text-lg shadow-lg hover:shadow-[#bc7fff]/25 hover:shadow-xl"
-          >
-            Get Started with Keeper Today
-          </Link>
+          <SignUpButton>
+            <button className="bg-[#bc7fff] hover:bg-[#bc7fff]/90 text-[#1e0539] font-semibold py-4 px-8 rounded-lg transition duration-200 shadow-lg hover:shadow-[#bc7fff]/25 hover:shadow-xl  cursor-pointer">
+              Get Started with Keeper today
+            </button>
+          </SignUpButton>
         </div>
       </section>
     </div>
