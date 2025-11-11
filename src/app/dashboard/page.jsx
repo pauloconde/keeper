@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import KeeperLogo from '@/app/components/KeeperLogo';
+import { useUser } from '@clerk/nextjs';
 
 // --- Datos de Ejemplo ---
 // En una aplicación real, esto vendría de una API
@@ -46,20 +47,27 @@ const initialEndpoints = [
 
 // --- Componente Header ---
 // Extraído para mayor claridad
-const DashboardHeader = () => (
-  <header className="flex items-center justify-between gap-4 pb-6">
-    <div className="flex items-center gap-6">
-      <div >
-       <KeeperLogo width="200" height="60" />
+const DashboardHeader = () => {
+  const { user } = useUser();
+
+  return (
+    <header className="flex items-center justify-between gap-4 pb-6">
+      <div className="flex items-center gap-6">
+        <div>
+          <KeeperLogo width="200" height="60" />
+        </div>
+        <div className="text-[#bc7fff] text-md leading-normal tracking-wide">Sleep is for humans!</div>
+        <div className="ml-4 text-sm text-white/70 truncate">
+          User ID: <span className="font-mono text-xs text-white/90">{user?.id ?? 'Not signed in'}</span>
+        </div>
       </div>
-      <div className="text-[#bc7fff] text-md leading-normal tracking-wide">Sleep is for humans!</div>
-    </div>
-    <button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-5 bg-[#bc7fff] text-white text-sm font-bold leading-normal tracking-wide hover:bg-opacity-90 transition-colors">
-      <span className="material-symbols-outlined !text-lg">add</span>
-      <span className="truncate">Add New Endpoint</span>
-    </button>
-  </header>
-);
+      <button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-5 bg-[#bc7fff] text-white text-sm font-bold leading-normal tracking-wide hover:bg-opacity-90 transition-colors">
+        <span className="material-symbols-outlined !text-lg">add</span>
+        <span className="truncate">Add New Endpoint</span>
+      </button>
+    </header>
+  )
+}
 
 // --- Componente EndpointCard ---
 // Este es el componente reutilizable que solicitaste.
