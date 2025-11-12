@@ -20,7 +20,7 @@ export async function GET(req) {
     try {
       const url = new URL(req.url)
       force = url.searchParams.get('force') === '1'
-    } catch (e) {
+    } catch {
       // ignore
     }
 
