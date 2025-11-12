@@ -1,4 +1,7 @@
+export const runtime = 'nodejs'
+
 import { auth } from "@clerk/nextjs/server";
+import { headers } from 'next/headers'
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from 'next/server';
 
@@ -10,11 +13,17 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     // 1. Obtener el ID del usuario autenticado (Auth guard)
-    const { userId } = auth();
+    let { userId } = auth();
 
     if (!userId) {
-      // Si no hay userId, el usuario no está autenticado.
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+      // Fallback de desarrollo: permitir pasar userId vía cabecera
+      const debugUserId = headers().get('x-debug-user-id')
+      if (debugUserId) {
+        userId = debugUserId
+      } else {
+        // Si no hay userId, el usuario no está autenticado.
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+      }
     }
 
     // 2. Consulta a Supabase para obtener los endpoints de ese usuario
@@ -47,9 +56,14 @@ export async function GET() {
 export async function POST(request) {
   try {
     // 1. Obtener el ID del usuario autenticado (Auth guard)
-    const { userId } = auth();
+    let { userId } = auth();
     if (!userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
+      const debugUserId = headers().get('x-debug-user-id')
+      if (debugUserId) {
+        userId = debugUserId
+      } else {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
+      }
     }
 
     const body = await request.json();

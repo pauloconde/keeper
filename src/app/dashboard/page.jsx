@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import KeeperLogo from '@/app/components/KeeperLogo';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 
 // --- Datos de Ejemplo ---
 // En una aplicación real, esto vendría de una API
@@ -125,6 +125,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { user } = useUser()
+  const { getToken } = useAuth()
 
   // Configuración de Tailwind en línea (para que funcione con el CDN como en tu HTML)
   const tailwindConfig = `
@@ -156,11 +157,28 @@ export default function Dashboard() {
     async function loadEndpoints() {
       setLoading(true)
       try {
+        // Obtener el JWT del usuario de Clerk para autenticación del backend
+        // Si hay plantilla configurada vía env, úsala; si falla o no existe, caer a token por defecto
+        const jwtTemplate = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE;
+        let token = null;
+        if (jwtTemplate) {
+          try {
+            token = await getToken({ template: jwtTemplate });
+          } catch (_e) {
+            // Plantilla no encontrada o error al obtener token: continuar con fallback
+          }
+        }
+        if (!token) {
+          token = await getToken();
+        }
+
         const res = await fetch('/api/endpoints', {
           method: 'GET',
           credentials: 'include',
           headers: {
-            // DEV only: pasar el userId para el fallback del servidor
+            // Pasar el Bearer JWT para que el backend identifique al usuario
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            // DEV only: pasar el userId para el fallback del servidor (opcional)
             'x-debug-user-id': user?.id ?? ''
           }
         })
@@ -181,6 +199,11 @@ export default function Dashboard() {
       }
     }
 
+    // Solo cargar cuando el usuario esté disponible
+    if (!user) {
+      setLoading(false)
+      return
+    }
     loadEndpoints()
   }, [user])
 
