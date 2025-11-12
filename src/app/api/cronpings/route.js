@@ -1,11 +1,11 @@
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabaseAdmin"
 import { NextResponse } from "next/server"
 
 // Esta función será llamada por el Vercel Cron Job
-export async function GET() {
+export async function GET(req) {
   try {
-    // Obtener todos los endpoints activos
-    const { data: endpoints, error } = await supabase.from("endpoints").select("*").eq("is_active", true)
+  // Obtener todos los endpoints activos
+  const { data: endpoints, error } = await supabaseAdmin.from("endpoints").select("*").eq("is_active", true)
 
     if (error) {
       console.error("Error fetching endpoints:", error)
@@ -15,10 +15,20 @@ export async function GET() {
     const results = []
     const now = new Date()
 
+    // Support a debug/force query param to trigger pings regardless of schedule
+    let force = false
+    try {
+      const url = new URL(req.url)
+      force = url.searchParams.get('force') === '1'
+    } catch (e) {
+      // ignore
+    }
+
     // Procesar cada endpoint
     for (const endpoint of endpoints) {
-      // Calcular si necesita ping
-      const needsPing = shouldPing(endpoint, now)
+      // Calcular si necesita ping (o forzar en modo debug)
+      let needsPing = shouldPing(endpoint, now)
+      if (force) needsPing = true
 
       if (needsPing) {
         const pingResult = await pingEndpoint(endpoint)
@@ -27,7 +37,7 @@ export async function GET() {
         // Actualizar en base de datos con el timestamp real del ping
         const updatedAt = new Date().toISOString()
         try {
-          const { data: updated, error: updateError } = await supabase
+          const { data: updated, error: updateError } = await supabaseAdmin
             .from("endpoints")
             .update({
               last_ping_at: updatedAt,
@@ -63,7 +73,7 @@ export async function GET() {
             created_at: updatedAt,
           }
 
-          const { data: logData, error: logError } = await supabase.from('ping_logs').insert([logRow]).select()
+          const { data: logData, error: logError } = await supabaseAdmin.from('ping_logs').insert([logRow]).select()
 
           if (logError) {
             console.error(`Failed to insert ping log for endpoint ${endpoint.id}:`, logError)
