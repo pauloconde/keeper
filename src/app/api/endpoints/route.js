@@ -76,12 +76,12 @@ export async function POST(request) {
     const { data, error } = await supabaseAdmin
       .from("endpoints")
       .insert([
-        { 
+        {
           user_id: userId, // **Siempre** usa el userId de la sesión
-          name, 
-          url, 
-          frequency_days, 
-          is_active: is_active !== undefined ? is_active : true 
+          name,
+          url,
+          frequency_days,
+          is_active: is_active !== undefined ? is_active : true
         }
       ])
       .select()
@@ -94,7 +94,9 @@ export async function POST(request) {
     // 4. Respuesta exitosa
     return new Response(JSON.stringify({ endpoint: data }), { status: 201, headers: { "Content-Type": "application/json" } });
   } catch (error) {
+    console.error("POST Endpoint Error:", error);
     // Manejo de errores de JSON parseo o errores internos
+    // No revelamos 'error.message' al cliente por seguridad, solo lo registramos.
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
