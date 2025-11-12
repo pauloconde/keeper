@@ -1,7 +1,6 @@
 export const runtime = 'nodejs'
 
-import { auth } from "@clerk/nextjs/server";
-import { headers } from 'next/headers'
+import { getAuth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from 'next/server';
 
@@ -10,20 +9,14 @@ import { NextResponse } from 'next/server';
  * @summary Obtiene todos los endpoints asociados al usuario autenticado.
  * @description Requiere autenticación a través de Clerk.
  */
-export async function GET() {
+export async function GET(request) {
   try {
     // 1. Obtener el ID del usuario autenticado (Auth guard)
-    let { userId } = auth();
+    // Preferir extraer desde la request para soportar cookies y Authorization Bearer
+    let { userId } = getAuth(request);
 
     if (!userId) {
-      // Fallback de desarrollo: permitir pasar userId vía cabecera
-      const debugUserId = headers().get('x-debug-user-id')
-      if (debugUserId) {
-        userId = debugUserId
-      } else {
-        // Si no hay userId, el usuario no está autenticado.
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-      }
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
 
     // 2. Consulta a Supabase para obtener los endpoints de ese usuario
@@ -56,14 +49,9 @@ export async function GET() {
 export async function POST(request) {
   try {
     // 1. Obtener el ID del usuario autenticado (Auth guard)
-    let { userId } = auth();
+    let { userId } = getAuth(request);
     if (!userId) {
-      const debugUserId = headers().get('x-debug-user-id')
-      if (debugUserId) {
-        userId = debugUserId
-      } else {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
-      }
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
 
     const body = await request.json();

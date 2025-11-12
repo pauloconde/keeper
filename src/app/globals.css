@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import 'material-symbols/outlined.css';
 
 /* 1. Variables base del App Router para modo CLARO */
 :root {

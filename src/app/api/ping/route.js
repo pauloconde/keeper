@@ -1,11 +1,13 @@
-import { auth } from "@clerk/nextjs/server"
+export const runtime = 'nodejs'
+
+import { getAuth } from "@clerk/nextjs/server"
 import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
 
 // POST - Hacer ping manual a un endpoint específico
 export async function POST(request) {
   try {
-    const { userId } = auth()
+    let { userId } = getAuth(request)
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

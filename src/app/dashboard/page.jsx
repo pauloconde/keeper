@@ -175,12 +175,8 @@ export default function Dashboard() {
         const res = await fetch('/api/endpoints', {
           method: 'GET',
           credentials: 'include',
-          headers: {
-            // Pasar el Bearer JWT para que el backend identifique al usuario
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // DEV only: pasar el userId para el fallback del servidor (opcional)
-            'x-debug-user-id': user?.id ?? ''
-          }
+          // Para llamadas same-origin, las cookies de Clerk son suficientes;
+          // evitamos enviar Authorization para no interferir con la detección
         })
 
         if (!res.ok) {

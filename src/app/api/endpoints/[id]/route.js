@@ -1,11 +1,13 @@
-import { auth } from "@clerk/nextjs/server"
+export const runtime = 'nodejs'
+
+import { getAuth } from "@clerk/nextjs/server"
 import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
 
 // PUT - Actualizar endpoint
 export async function PUT(request, { params }) {
   try {
-    const { userId } = auth()
+    let { userId } = getAuth(request)
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -69,7 +71,7 @@ export async function PUT(request, { params }) {
 // DELETE - Eliminar endpoint
 export async function DELETE(request, { params }) {
   try {
-    const { userId } = auth()
+    let { userId } = getAuth(request)
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

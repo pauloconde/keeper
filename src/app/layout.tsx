@@ -37,16 +37,18 @@ export default function RootLayout({
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
           <header className="flex items-center justify-between gap-4 pb-6 m-6">
             <div className="flex items-center gap-6">
-              <div >
+              <div>
                 <KeeperLogo width="200" height="60" />
               </div>
-              <div className="text-[#bc7fff] text-md leading-normal tracking-wide">Sleep is for humans!</div>
+              <div className="text-[#bc7fff] text-md leading-normal tracking-wide">
+                Sleep is for humans!
+              </div>
             </div>
             <div className="flex justify-end items-center p-4 gap-4 h-16">
               <SignedOut>
                 <SignInButton />
                 <SignUpButton>
-                  <button className="bg-[#bc7fff] hover:bg-[#bc7fff]/90 text-[#1e0539] font-semibold py-3 px-4   rounded-md  transition duration-200 shadow-lg hover:shadow-[#bc7fff]/25 hover:shadow-xl cursor-pointer">
+                  <button className="bg-[#bc7fff] hover:bg-[#bc7fff]/90 text-[#1e0539] font-semibold py-3 px-4 rounded-md transition duration-200 shadow-lg hover:shadow-[#bc7fff]/25 hover:shadow-xl cursor-pointer">
                     Sign Up
                   </button>
                 </SignUpButton>
