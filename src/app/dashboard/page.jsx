@@ -1,65 +1,33 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import KeeperLogo from '@/app/components/KeeperLogo';
 import { useUser } from '@clerk/nextjs';
 
 // --- Datos de Ejemplo ---
 // En una aplicación real, esto vendría de una API
+// Mantengo la estructura de ejemplo como comentario para referencia:
+/*
 const initialEndpoints = [
-  {
-    id: 1,
-    status: 'active',
-    name: 'My API Server',
-    url: 'https://api.myapp.com/health',
-    frequency: 'Every 7 days',
-    lastPing: '2 days ago',
-    nextPing: 'In 5 days',
-  },
-  {
-    id: 2,
-    status: 'expiring',
-    name: 'Staging Environment',
-    url: 'https://staging.my-app.dev/status',
-    frequency: 'Every 30 days',
-    lastPing: '28 days ago',
-    nextPing: 'In 2 days',
-  },
-  {
-    id: 3,
-    status: 'failed',
-    name: 'Legacy System Healthcheck',
-    url: 'http://192.168.1.10/legacy/ping',
-    frequency: 'Every 1 day',
-    lastPing: '1 day ago',
-    nextPing: 'In 1 hour',
-  },
-  {
-    id: 4,
-    status: 'inactive',
-    name: 'Dev Database Ping',
-    url: 'mysql://user:pass@dev.db.internal:3306',
-    frequency: 'Every 12 hours',
-    lastPing: '3 days ago',
-    nextPing: 'Paused',
-  },
-];
+  { id: 1, status: 'active', name: 'My API Server', url: 'https://api.myapp.com/health', frequency: 'Every 7 days', lastPing: '2 days ago', nextPing: 'In 5 days' },
+  { id: 2, status: 'expiring', name: 'Staging Environment', url: 'https://staging.my-app.dev/status', frequency: 'Every 30 days', lastPing: '28 days ago', nextPing: 'In 2 days' },
+  { id: 3, status: 'failed', name: 'Legacy System Healthcheck', url: 'http://192.168.1.10/legacy/ping', frequency: 'Every 1 day', lastPing: '1 day ago', nextPing: 'In 1 hour' },
+  { id: 4, status: 'inactive', name: 'Dev Database Ping', url: 'mysql://user:pass@dev.db.internal:3306', frequency: 'Every 12 hours', lastPing: '3 days ago', nextPing: 'Paused' },
+]
+*/
 
 // --- Componente Header ---
 // Extraído para mayor claridad
 const DashboardHeader = () => {
-  const { user } = useUser();
+      const { user } = useUser()
 
   return (
     <header className="flex items-center justify-between gap-4 pb-6">
       <div className="flex items-center gap-6">
-        <div>
-          <KeeperLogo width="200" height="60" />
-        </div>
-        <div className="text-[#bc7fff] text-md leading-normal tracking-wide">Sleep is for humans!</div>
-        <div className="ml-4 text-sm text-white/70 truncate">
-          User ID: <span className="font-mono text-xs text-white/90">{user?.id ?? 'Not signed in'}</span>
-        </div>
+        
+            <div className="text-[#bc7fff] text-md leading-normal tracking-wide">
+              User ID: <span className="font-mono text-md text-white/90">{user?.id ?? 'Not signed in'}</span>
+            </div>
       </div>
       <button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-5 bg-[#bc7fff] text-white text-sm font-bold leading-normal tracking-wide hover:bg-opacity-90 transition-colors">
         <span className="material-symbols-outlined !text-lg">add</span>
@@ -153,7 +121,10 @@ const EmptyState = () => (
 
 // --- Página Principal ---
 export default function Dashboard() {
-  const [endpoints, setEndpoints] = useState(initialEndpoints);
+  const [endpoints, setEndpoints] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const { user } = useUser()
 
   // Configuración de Tailwind en línea (para que funcione con el CDN como en tu HTML)
   const tailwindConfig = `
@@ -180,6 +151,39 @@ export default function Dashboard() {
     }
   `;
 
+  useEffect(() => {
+    // fetch endpoints for the logged-in user from the server route
+    async function loadEndpoints() {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/endpoints', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            // DEV only: pasar el userId para el fallback del servidor
+            'x-debug-user-id': user?.id ?? ''
+          }
+        })
+
+        if (!res.ok) {
+          const errText = await res.text()
+          throw new Error(errText || 'Failed to fetch endpoints')
+        }
+
+        const json = await res.json()
+        setEndpoints(json.endpoints || [])
+        setError(null)
+      } catch (err) {
+        setError(err.message || String(err))
+        setEndpoints([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadEndpoints()
+  }, [user])
+
   return (
     // Aplicamos 'dark' a la raíz y las clases de body para que coincida con tu HTML
     <div className="dark bg-background-light dark:bg-background-dark font-display text-white antialiased">
@@ -195,13 +199,24 @@ export default function Dashboard() {
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                   <h2 className="text-4xl font-black leading-tight tracking-[-0.033em]">Endpoints</h2>
                 </div>
-
                 {/* --- Grid Dinámica --- */}
-                {/* Muestra los endpoints si existen, o el estado vacío si no */}
-                {endpoints.length > 0 ? (
+                {/* Muestra los endpoints del usuario autenticado */}
+                {loading ? (
+                  <div className="py-12 text-center">Loading endpoints…</div>
+                ) : error ? (
+                  <div className="py-12 text-center text-red-400">Error loading endpoints: {error}</div>
+                ) : endpoints.length > 0 ? (
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {endpoints.map((endpoint) => (
-                      <EndpointCard key={endpoint.id} endpoint={endpoint} />
+                      <EndpointCard key={endpoint.id} endpoint={{
+                        id: endpoint.id,
+                        name: endpoint.name,
+                        url: endpoint.url,
+                        status: endpoint.last_status ? (endpoint.last_status === 'success' ? 'active' : 'failed') : 'inactive',
+                        frequency: `${endpoint.frequency_days} days`,
+                        lastPing: endpoint.last_ping_at ?? 'Never',
+                        nextPing: '—',
+                      }} />
                     ))}
                   </div>
                 ) : (

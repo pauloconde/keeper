@@ -1,85 +1,100 @@
-import { auth } from "@clerk/nextjs/server"
-import { supabase } from "@/lib/supabase"
-import { NextResponse } from "next/server"
+import { auth } from "@clerk/nextjs/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { NextResponse } from 'next/server';
 
-// GET - Listar todos los endpoints del usuario
+/**
+ * @method GET
+ * @summary Obtiene todos los endpoints asociados al usuario autenticado.
+ * @description Requiere autenticación a través de Clerk.
+ */
 export async function GET() {
   try {
-    const { userId } = auth()
+    // 1. Obtener el ID del usuario autenticado (Auth guard)
+    const { userId } = auth();
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      // Si no hay userId, el usuario no está autenticado.
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const { data, error } = await supabase
-      .from("endpoints")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
+    // 2. Consulta a Supabase para obtener los endpoints de ese usuario
+    const { data, error } = await supabaseAdmin
+      .from('endpoints')
+      .select('*')
+      .eq('user_id', userId) // Filtra estrictamente por el ID del usuario
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Error fetching endpoints:", error)
-      return NextResponse.json({ error: "Failed to fetch endpoints" }, { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    return NextResponse.json({ endpoints: data })
-  } catch (error) {
-    console.error("Unexpected error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    // 3. Respuesta exitosa
+    return new Response(JSON.stringify({ endpoints: data }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  } catch (err) {
+    // Manejo de errores generales (incluyendo fallos en auth())
+    return new Response(JSON.stringify({ error: err?.message ?? 'Internal Server Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
 
-// POST - Crear nuevo endpoint
+// -----------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------
+
+/**
+ * @method POST
+ * @summary Crea un nuevo endpoint para el usuario autenticado.
+ * @description Requiere autenticación a través de Clerk.
+ */
 export async function POST(request) {
   try {
-    const { userId } = auth()
-
+    // 1. Obtener el ID del usuario autenticado (Auth guard)
+    const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
 
-    const body = await request.json()
-    const { name, url, frequency_days, is_active } = body
+    const body = await request.json();
+    const { name, url, frequency_days, is_active } = body;
 
-    // Validaciones
+    // 2. Validaciones
     if (!name || !url || !frequency_days) {
-      return NextResponse.json({ error: "Missing required fields: name, url, frequency_days" }, { status: 400 })
+      return NextResponse.json({ error: "Missing required fields: name, url, frequency_days" }, { status: 400 });
     }
 
-    // Validar URL
+    // Validar formato de URL
     try {
-      new URL(url)
+      new URL(url);
     } catch {
-      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 })
+      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
     }
 
-    // Validar frecuencia
+    // Validar frecuencia (de 1 a 30 días)
     if (frequency_days < 1 || frequency_days > 30) {
-      return NextResponse.json({ error: "Frequency must be between 1 and 30 days" }, { status: 400 })
+      return NextResponse.json({ error: "Frequency must be between 1 and 30 days" }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    // 3. Inserción en Supabase
+    const { data, error } = await supabaseAdmin
       .from("endpoints")
       .insert([
-        {
-          user_id: userId,
-          name,
-          url,
-          frequency_days,
-          is_active: is_active !== undefined ? is_active : true,
-        },
+        { 
+          user_id: userId, // **Siempre** usa el userId de la sesión
+          name, 
+          url, 
+          frequency_days, 
+          is_active: is_active !== undefined ? is_active : true 
+        }
       ])
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error("Error creating endpoint:", error)
-      return NextResponse.json({ error: "Failed to create endpoint" }, { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
 
-    return NextResponse.json({ endpoint: data }, { status: 201 })
+    // 4. Respuesta exitosa
+    return new Response(JSON.stringify({ endpoint: data }), { status: 201, headers: { "Content-Type": "application/json" } });
   } catch (error) {
-    console.error("Unexpected error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    // Manejo de errores de JSON parseo o errores internos
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
