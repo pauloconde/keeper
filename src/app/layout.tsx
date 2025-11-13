@@ -9,7 +9,9 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import DashboardLink from '@/app/components/DashboardLink'
 import './globals.css'
+import Link from 'next/link'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -38,7 +40,9 @@ export default function RootLayout({
           <header className="flex items-center justify-between gap-4 pb-6 m-6">
             <div className="flex items-center gap-6">
               <div>
-                <KeeperLogo width="200" height="60" />
+                <Link href="/">
+                  <KeeperLogo width="200" height="60" />
+                </Link>
               </div>
               <div className="text-[#bc7fff] text-md leading-normal tracking-wide">
                 Sleep is for humans!
@@ -54,7 +58,14 @@ export default function RootLayout({
                 </SignUpButton>
               </SignedOut>
               <SignedIn>
-                <UserButton />
+                <DashboardLink />
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "!w-20 !h-20 !border-2 !border-solid !border-white/20",
+                    }
+                  }}
+                />
               </SignedIn>
             </div>
           </header>

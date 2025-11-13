@@ -40,7 +40,7 @@ const DashboardHeader = () => {
 // --- Componente EndpointCard ---
 // Este es el componente reutilizable que solicitaste.
 // Maneja diferentes "modos" (estados) a través de props.
-const EndpointCard = ({ endpoint }) => {
+const EndpointCard = ({ endpoint, onPing, isPinging }) => {
   // Configuración para cada estado
   const statusConfig = {
     active: {
@@ -89,9 +89,13 @@ const EndpointCard = ({ endpoint }) => {
         </div>
         
         <div className="flex items-center gap-2 mt-2">
-          <button className="flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 overflow-hidden rounded-lg bg-primary/20 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/30">
+          <button
+            onClick={() => onPing?.(endpoint.id)}
+            disabled={!!isPinging}
+            className={`flex h-9 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-lg px-4 text-sm font-semibold transition-colors ${isPinging ? 'bg-white/10 text-white/50 cursor-not-allowed' : 'bg-primary/20 text-primary hover:bg-primary/30'}`}
+          >
             <span className="material-symbols-outlined !text-base">bolt</span>
-            <span className="truncate">Ping Now</span>
+            <span className="truncate">{isPinging ? 'Pinging…' : 'Ping Now'}</span>
           </button>
           <button className="flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white" title="Edit">
             <span className="material-symbols-outlined">edit</span>
@@ -124,6 +128,8 @@ export default function Dashboard() {
   const [endpoints, setEndpoints] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [toast, setToast] = useState(null) // { type: 'success'|'error', title, message }
+  const [pingingId, setPingingId] = useState(null)
   const { user } = useUser()
   const { getToken } = useAuth()
 
@@ -203,6 +209,50 @@ export default function Dashboard() {
     loadEndpoints()
   }, [user])
 
+  // Handler de ping manual
+  async function handlePing(endpointId) {
+    if (!endpointId) return
+    setPingingId(endpointId)
+    try {
+      const res = await fetch('/api/ping', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpointId })
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setToast({ type: 'error', title: 'Ping failed', message: err.error || `Request failed (${res.status})` })
+      } else {
+        const json = await res.json()
+        const r = json?.result
+        const msg = r?.status === 'success'
+          ? `HTTP ${r?.statusCode} · ${r?.responseTime}ms`
+          : r?.error ? `${r?.error} · ${r?.responseTime}ms` : `Unexpected response`
+        setToast({ type: r?.status === 'success' ? 'success' : 'error', title: 'Ping completed', message: msg })
+        // refrescar endpoints sin mostrar loader
+        try {
+          const res2 = await fetch('/api/endpoints', { method: 'GET', credentials: 'include' })
+          if (res2.ok) {
+            const j2 = await res2.json()
+            setEndpoints(j2.endpoints || [])
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      setToast({ type: 'error', title: 'Ping error', message: e.message || 'Unknown error' })
+    } finally {
+      setPingingId(null)
+    }
+  }
+
+  // Auto-cerrar toast
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 4000)
+    return () => clearTimeout(t)
+  }, [toast])
+
   return (
     // Aplicamos 'dark' a la raíz y las clases de body para que coincida con tu HTML
     <div className="dark bg-background-light dark:bg-background-dark font-display text-white antialiased">
@@ -235,7 +285,7 @@ export default function Dashboard() {
                         frequency: `${endpoint.frequency_days} days`,
                         lastPing: endpoint.last_ping_at ?? 'Never',
                         nextPing: '—',
-                      }} />
+                      }} onPing={handlePing} isPinging={pingingId === endpoint.id} />
                     ))}
                   </div>
                 ) : (
@@ -250,8 +300,26 @@ export default function Dashboard() {
                 {/* <EmptyState /> */}
                 
               </main>
+    </div>
+
+    {/* Toast simple */}
+    {toast && (
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className={`rounded-lg px-4 py-3 shadow-lg min-w-[280px] ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+          <div className="flex items-start gap-2">
+            <span className="material-symbols-outlined">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
+            <div className="flex-1">
+              <div className="font-bold text-sm">{toast.title}</div>
+              <div className="text-sm opacity-90">{toast.message}</div>
             </div>
+            <button onClick={() => setToast(null)} className="ml-2 text-white/80 hover:text-white">
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
+        </div>
+      </div>
+    )}
+  </div>
         </div>
       </div>
     </div>
