@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import Head from 'next/head';
-import KeeperLogo from '@/app/components/KeeperLogo';
+import EndpointCard from '@/app/components/EndpointCard';
 import { useUser, useAuth } from '@clerk/nextjs';
 
 // --- Datos de Ejemplo ---
@@ -19,15 +18,17 @@ const initialEndpoints = [
 // --- Componente Header ---
 // Extraído para mayor claridad
 const DashboardHeader = () => {
-      const { user } = useUser()
+  const { user } = useUser()
 
   return (
     <header className="flex items-center justify-between gap-4 pb-6">
-      <div className="flex items-center gap-6">
-        
-            <div className="text-[#bc7fff] text-md leading-normal tracking-wide">
-              User ID: <span className="font-mono text-md text-white/90">{user?.id ?? 'Not signed in'}</span>
-            </div>
+      <div className="flex flex-col items-start gap-1 rounded-lg border border-white/10 px-4 py-2">
+         <div className="text-[#bc7fff] font-bold text-lg leading-normal tracking-wide">
+          Active Session <span className="font-mono text-sm text-white/50">{user?.id ?? 'Not signed in'}</span>
+        </div>
+        <div className="text-[#bc7fff] text-md leading-normal tracking-wide">
+          <span className="font-mono text-md text-white/90">{user?.fullName ?? 'Not signed in'} - {user?.emailAddresses[0]?.emailAddress ?? 'Not signed in'}</span>
+        </div>
       </div>
       <button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-5 bg-[#bc7fff] text-white text-sm font-bold leading-normal tracking-wide hover:bg-opacity-90 transition-colors">
         <span className="material-symbols-outlined !text-lg">add</span>
@@ -37,77 +38,7 @@ const DashboardHeader = () => {
   )
 }
 
-// --- Componente EndpointCard ---
-// Este es el componente reutilizable que solicitaste.
-// Maneja diferentes "modos" (estados) a través de props.
-const EndpointCard = ({ endpoint, onPing, isPinging }) => {
-  // Configuración para cada estado
-  const statusConfig = {
-    active: {
-      text: 'Active',
-      textColor: 'text-green-400',
-      bgColor: 'bg-green-500',
-    },
-    expiring: {
-      text: 'Expiring Soon',
-      textColor: 'text-yellow-400',
-      bgColor: 'bg-yellow-500',
-    },
-    failed: {
-      text: 'Failed',
-      textColor: 'text-red-400',
-      bgColor: 'bg-red-500',
-    },
-    inactive: {
-      text: 'Inactive',
-      textColor: 'text-gray-400',
-      bgColor: 'bg-gray-500',
-    },
-  };
 
-  // Obtener la configuración correcta o usar 'inactive' como default
-  const config = statusConfig[endpoint.status] || statusConfig.inactive;
-
-  return (
-    <div className="flex items-start gap-3 rounded-xl bg-white/5 p-5 transition-all hover:bg-white/10">
-      {/* Indicador de estado dinámico */}
-      <div className={`w-1.5 h-6 shrink-0 rounded-full ${config.bgColor} mt-1`}></div>
-      
-      <div className="flex w-full flex-col gap-4">
-        <div>
-          {/* Texto de estado dinámico */}
-          <p className={`text-sm font-medium ${config.textColor}`}>{config.text}</p>
-          {/* Datos del endpoint */}
-          <h3 className="text-lg font-bold leading-tight tracking-[-0.015em] text-white">{endpoint.name}</h3>
-          <p className="text-sm text-primary/70 truncate" title={endpoint.url}>{endpoint.url}</p>
-        </div>
-        
-        <div className="text-sm text-white/60 space-y-1">
-          <p><strong className="font-medium text-white/80">Frequency:</strong> {endpoint.frequency}</p>
-          <p><strong className="font-medium text-white/80">Last Ping:</strong> {endpoint.lastPing}</p>
-          <p><strong className="font-medium text-white/80">Next Ping:</strong> {endpoint.nextPing}</p>
-        </div>
-        
-        <div className="flex items-center gap-2 mt-2">
-          <button
-            onClick={() => onPing?.(endpoint.id)}
-            disabled={!!isPinging}
-            className={`flex h-9 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-lg px-4 text-sm font-semibold transition-colors ${isPinging ? 'bg-white/10 text-white/50 cursor-not-allowed' : 'bg-primary/20 text-primary hover:bg-primary/30'}`}
-          >
-            <span className="material-symbols-outlined !text-base">bolt</span>
-            <span className="truncate">{isPinging ? 'Pinging…' : 'Ping Now'}</span>
-          </button>
-          <button className="flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white" title="Edit">
-            <span className="material-symbols-outlined">edit</span>
-          </button>
-          <button className="flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-red-500/20 hover:text-red-400" title="Delete">
-            <span className="material-symbols-outlined">delete</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // --- Componente EmptyState ---
 // Se muestra cuando no hay endpoints
@@ -130,6 +61,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null)
   const [toast, setToast] = useState(null) // { type: 'success'|'error', title, message }
   const [pingingId, setPingingId] = useState(null)
+  const [isPingingURL, setPingingURL] = useState(false);
   const { user } = useUser()
   const { getToken } = useAuth()
 
@@ -237,7 +169,7 @@ export default function Dashboard() {
             const j2 = await res2.json()
             setEndpoints(j2.endpoints || [])
           }
-        } catch (_) {}
+        } catch (_) { }
       }
     } catch (e) {
       setToast({ type: 'error', title: 'Ping error', message: e.message || 'Unknown error' })
@@ -245,6 +177,46 @@ export default function Dashboard() {
       setPingingId(null)
     }
   }
+
+  //Handler de ping manual por URL
+async function handlePingURL(rawUrl) {
+  try {
+    setPingingURL(true);
+
+    const encodedUrl = encodeURIComponent(rawUrl);
+    const res = await fetch(`/api/ping/${encodedUrl}`);
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      setToast({
+        type: 'error',
+        title: 'Ping failed',
+        message: result.error || 'Error desconocido al hacer ping',
+      });
+      return;
+    }
+
+    const isJson = typeof result.data === 'object';
+    const msg = isJson
+      ? JSON.stringify(result.data, null, 2)
+      : String(result.data).slice(0, 500); // Limita texto largo
+
+    setToast({
+      type: 'success',
+      title: 'Ping completed',
+      message: msg,
+    });
+  } catch (err) {
+    setToast({
+      type: 'error',
+      title: 'Error de red',
+      message: err.message || 'No se pudo completar el ping',
+    });
+  } finally {
+    setPingingURL(false);
+  }
+};
 
   // Auto-cerrar toast
   useEffect(() => {
@@ -261,7 +233,7 @@ export default function Dashboard() {
         <div className="layout-container flex h-full grow flex-col">
           <div className="flex flex-1 justify-center p-4 sm:p-6 lg:p-8">
             <div className="layout-content-container flex w-full max-w-7xl flex-1 flex-col">
-              
+
               <DashboardHeader />
 
               <main className="py-8">
@@ -285,41 +257,41 @@ export default function Dashboard() {
                         frequency: `${endpoint.frequency_days} days`,
                         lastPing: endpoint.last_ping_at ?? 'Never',
                         nextPing: '—',
-                      }} onPing={handlePing} isPinging={pingingId === endpoint.id} />
+                      }} onPing={handlePing} onPingURL={handlePingURL} isPinging={pingingId === endpoint.id} isPingingURL={isPingingURL} />
                     ))}
                   </div>
                 ) : (
                   <EmptyState />
                 )}
-                
+
                 {/* Nota: En tu HTML original, el EmptyState se mostraba *además* de las otras tarjetas.
                   Lo he cambiado a una lógica condicional: o se muestran las tarjetas, o se muestra el EmptyState.
                   Si quieres replicar el comportamiento original (mostrar siempre el EmptyState), 
                   simplemente descomenta la siguiente línea y elimina la lógica condicional de arriba.
                 */}
                 {/* <EmptyState /> */}
-                
-              </main>
-    </div>
 
-    {/* Toast simple */}
-    {toast && (
-      <div className="fixed bottom-4 right-4 z-50">
-        <div className={`rounded-lg px-4 py-3 shadow-lg min-w-[280px] ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-          <div className="flex items-start gap-2">
-            <span className="material-symbols-outlined">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
-            <div className="flex-1">
-              <div className="font-bold text-sm">{toast.title}</div>
-              <div className="text-sm opacity-90">{toast.message}</div>
+              </main>
             </div>
-            <button onClick={() => setToast(null)} className="ml-2 text-white/80 hover:text-white">
-              <span className="material-symbols-outlined">close</span>
-            </button>
+
+            {/* Toast simple */}
+            {toast && (
+              <div className="fixed bottom-4 right-4 z-50">
+                <div className={`rounded-lg px-4 py-3 shadow-lg min-w-[280px] ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                  <div className="flex items-start gap-2">
+                    <span className="material-symbols-outlined">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
+                    <div className="flex-1">
+                      <div className="font-bold text-sm">{toast.title}</div>
+                      <div className="text-sm opacity-90">{toast.message}</div>
+                    </div>
+                    <button onClick={() => setToast(null)} className="ml-2 text-white/80 hover:text-white">
+                      <span className="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
-    )}
-  </div>
         </div>
       </div>
     </div>

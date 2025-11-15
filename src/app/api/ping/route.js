@@ -28,6 +28,8 @@ export async function POST(request) {
       .eq("user_id", userId)
       .single()
 
+      console.log('Fetched endpoint for manual ping:', endpoint, fetchError);
+
     if (fetchError || !endpoint) {
       return NextResponse.json({ error: "Endpoint not found" }, { status: 404 })
     }
