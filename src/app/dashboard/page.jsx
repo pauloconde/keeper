@@ -23,7 +23,7 @@ const DashboardHeader = () => {
   return (
     <header className="flex items-center justify-between gap-4 pb-6">
       <div className="flex flex-col items-start gap-1 rounded-lg border border-white/10 px-4 py-2">
-         <div className="text-[#bc7fff] font-bold text-lg leading-normal tracking-wide">
+        <div className="text-[#bc7fff] font-bold text-lg leading-normal tracking-wide">
           Active Session <span className="font-mono text-sm text-white/50">{user?.id ?? 'Not signed in'}</span>
         </div>
         <div className="text-[#bc7fff] text-md leading-normal tracking-wide">
@@ -179,49 +179,49 @@ export default function Dashboard() {
   }
 
   //Handler de ping manual por URL
-async function handlePingURL(rawUrl) {
-  try {
-    setPingingURL(true);
+  async function handlePingURL(rawUrl) {
+    try {
+      setPingingURL(true);
 
-    const encodedUrl = encodeURIComponent(rawUrl);
-    const res = await fetch(`/api/ping/${encodedUrl}`);
+      const encodedUrl = encodeURIComponent(rawUrl);
+      const res = await fetch(`/api/ping/${encodedUrl}`);
 
-    const result = await res.json();
+      const result = await res.json();
 
-    if (!res.ok) {
+      if (!res.ok) {
+        setToast({
+          type: 'error',
+          title: 'Ping failed',
+          message: result.error || 'Error desconocido al hacer ping',
+        });
+        return;
+      }
+
+      const isJson = typeof result.data === 'object';
+      const msg = isJson
+        ? JSON.stringify(result.data, null, 2)
+        : String(result.data).slice(0, 500); // Limita texto largo
+
+      setToast({
+        type: 'success',
+        title: 'Ping completed',
+        message: msg,
+      });
+    } catch (err) {
       setToast({
         type: 'error',
-        title: 'Ping failed',
-        message: result.error || 'Error desconocido al hacer ping',
+        title: 'Error de red',
+        message: err.message || 'No se pudo completar el ping',
       });
-      return;
+    } finally {
+      setPingingURL(false);
     }
-
-    const isJson = typeof result.data === 'object';
-    const msg = isJson
-      ? JSON.stringify(result.data, null, 2)
-      : String(result.data).slice(0, 500); // Limita texto largo
-
-    setToast({
-      type: 'success',
-      title: 'Ping completed',
-      message: msg,
-    });
-  } catch (err) {
-    setToast({
-      type: 'error',
-      title: 'Error de red',
-      message: err.message || 'No se pudo completar el ping',
-    });
-  } finally {
-    setPingingURL(false);
-  }
-};
+  };
 
   // Auto-cerrar toast
   useEffect(() => {
     if (!toast) return
-    const t = setTimeout(() => setToast(null), 4000)
+    const t = setTimeout(() => setToast(null), 8000)
     return () => clearTimeout(t)
   }, [toast])
 
@@ -274,19 +274,33 @@ async function handlePingURL(rawUrl) {
               </main>
             </div>
 
-            {/* Toast simple */}
             {toast && (
               <div className="fixed bottom-4 right-4 z-50">
-                <div className={`rounded-lg px-4 py-3 shadow-lg min-w-[280px] ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-                  <div className="flex items-start gap-2">
-                    <span className="material-symbols-outlined">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
-                    <div className="flex-1">
+                <div className={`rounded-lg px-4 py-3 shadow-lg min-w-[280px] max-w-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                  <div className="flex flex-row items-start gap-2">
+                    <span className="material-symbols-outlined mt-0.5">
+                      {toast.type === 'success' ? 'check_circle' : 'error'}
+                    </span>
+                    <div className="flex-1 overflow-hidden">
                       <div className="font-bold text-sm">{toast.title}</div>
-                      <div className="text-sm opacity-90">{toast.message}</div>
+                      <div className="text-sm opacity-90 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">{toast.message}</div>
                     </div>
-                    <button onClick={() => setToast(null)} className="ml-2 text-white/80 hover:text-white">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
+                    <div className="flex flex-col gap-1 items-end">
+                      <button
+                        onClick={() => navigator.clipboard.writeText(toast.message)}
+                        className="text-white/80 hover:text-white"
+                        title="Copiar al portapapeles"
+                      >
+                        <span className="material-symbols-outlined text-base">content_copy</span>
+                      </button>
+                      <button
+                        onClick={() => setToast(null)}
+                        className="text-white/80 hover:text-white"
+                        title="Cerrar"
+                      >
+                        <span className="material-symbols-outlined text-base">close</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

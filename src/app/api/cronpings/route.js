@@ -13,24 +13,10 @@ export async function GET(req) {
     }
 
     const results = []
-    const now = new Date()
-
-    // Support a debug/force query param to trigger pings regardless of schedule
-    let force = false
-    try {
-      const url = new URL(req.url)
-      force = url.searchParams.get('force') === '1'
-    } catch {
-      // ignore
-    }
 
     // Procesar cada endpoint
     for (const endpoint of endpoints) {
-      // Calcular si necesita ping (o forzar en modo debug)
-      let needsPing = shouldPing(endpoint, now)
-      if (force) needsPing = true
 
-      if (needsPing) {
         const pingResult = await pingEndpoint(endpoint)
         results.push(pingResult)
 
@@ -83,7 +69,6 @@ export async function GET(req) {
         } catch (logErr) {
           console.error(`Unexpected DB error inserting ping log for endpoint ${endpoint.id}:`, logErr)
         }
-      }
     }
 
     return NextResponse.json({
@@ -97,17 +82,7 @@ export async function GET(req) {
   }
 }
 
-// Función auxiliar: determinar si un endpoint necesita ping
-function shouldPing(endpoint, now) {
-  if (!endpoint.last_ping_at) {
-    return true // Nunca se ha hecho ping
-  }
 
-  const lastPing = new Date(endpoint.last_ping_at)
-  const daysSinceLastPing = (now - lastPing) / (1000 * 60 * 60 * 24)
-
-  return daysSinceLastPing >= endpoint.frequency_days
-}
 
 // Función auxiliar: hacer ping a un endpoint
 async function pingEndpoint(endpoint) {

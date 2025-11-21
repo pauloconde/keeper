@@ -8,7 +8,7 @@
   "crons": [
     {
       "path": "/api/cronpings",
-      "schedule": "0 16 * * *"
+      "schedule": "30 17,5 * * *"
     }
   ],
   "functions": {
@@ -16,5 +16,7 @@
       "maxDuration": 60
     }
   },
-  "regions": ["iad1"]
+  "regions": [
+    "iad1"
+  ]
 }
