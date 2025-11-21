@@ -8,7 +8,7 @@
   "crons": [
     {
       "path": "/api/cronpings",
-      "schedule": "45 17,5 * * *"
+      "schedule": "45 17 * * *"
     }
   ],
   "functions": {
